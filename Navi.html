@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <title>$NAVI - xummer </title>
+    <style>
+        /* Basic Setup */
+        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
+        .ad-container {
+            width: 300px; height: 250px; background-color: #010409;
+            overflow: hidden; position: relative; cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            border: 1px solid #30363d; box-sizing: border-box;
+            display: block; text-decoration: none;
+        }
+
+        /* --- BACKGROUND & PATH --- */
+        #grid-background {
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(to right, rgba(0, 234, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 234, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        #flight-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
+        #flight-path {
+            stroke: #00eaff; stroke-width: 2; fill: none;
+            stroke-dasharray: 500; stroke-dashoffset: 500;
+            filter: drop-shadow(0 0 5px #00eaff);
+        }
+
+        /* --- DYNAMIC ELEMENTS --- */
+        #ufo {
+            position: absolute; width: 60px; z-index: 20;
+            filter: drop-shadow(0 0 5px #00eaff);
+            transform: translate(-50%, -50%);
+            opacity: 0; /* Hidden by default */
+        }
+
+        #multiplier-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 48px; color: #fff; text-shadow: 0 0 15px #fff;
+            opacity: 0; transition: opacity 0.5s, color 0.3s;
+        }
+        
+        #cashout-button {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: linear-gradient(45deg, #ffae00, #ffea00);
+            color: #010409;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 0 20px #ffea00;
+            z-index: 35;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #cashout-button.visible { transform: translateX(-50%) scale(1); }
+
+        /* --- END SCREEN --- */
+        #endscreen {
+            position: absolute; width: 100%; height: 100%; top:0; left:0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(1, 4, 9, 0.8); z-index: 40; opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #cta-text { font-size: 24px; color: #00ff8c; text-shadow: 0 0 10px #00ff8c; margin-bottom: 15px; }
+        #endscreen img { width: 80px; }
+        #endscreen .cta-button { margin-top: 15px; background: #00eaff; box-shadow: 0 0 15px #00eaff; }
+
+        /* --- KEYFRAMES --- */
+        @keyframes jackpotFlash {
+             0%, 100% { box-shadow: 0 0 15px #fff; }
+             50% { box-shadow: 0 0 30px 15px #fff; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="https://dexscreener.com/ethereum/0xd224952df6604f90b6ef13c19411ba30401b347a30dc5d15366460cd64112b40" target="_blank" class="ad-container" id="ad-container">
+        <div id="grid-background"></div>
+        <svg id="flight-path-svg" viewbox="0 0 300 250">
+            <path id="flight-path" d="M 20,230 C 80,230 150,50 280,30"></path>
+        </svg>
+
+        <img id="ufo" src="ufo2.png" alt="NAVI UFO">
+        
+        <div id="ui-layer">
+            <div id="multiplier-text">1.00x</div>
+            <div id="cashout-button">Cash Out</div>
+        </div>
+
+        <div id="endscreen">
+            <div id="cta-text">9999x UNLOCKED</div>
+            <img src="alien.gif" alt="NAVI Alien Mascot">
+            <div class="cta-button">Start Your Flight</div>
+        </div>
+    </a>
+
+    <script>
+        const ad = document.getElementById('ad-container');
+        const multiplierText = document.getElementById('multiplier-text');
+        const endscreen = document.getElementById('endscreen');
+        const cashoutButton = document.getElementById('cashout-button');
+        const ufo = document.getElementById('ufo');
+        const flightPathSvg = document.getElementById('flight-path-svg');
+        const flightPath = document.getElementById('flight-path');
+
+        const adDuration = 15000;
+        const flightDuration = 8000;
+        let animationFrameId;
+
+        const pathLength = flightPath.getTotalLength();
+
+        function runFlightAnimation(start, end, duration) {
+            let startTimestamp = null;
+            
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                
+                const currentValue = progress * (end - start) + start;
+                multiplierText.textContent = `${currentValue.toFixed(2)}x`;
+                
+                const currentLength = progress * pathLength;
+                flightPath.style.strokeDashoffset = pathLength - currentLength;
+                
+                const point = flightPath.getPointAtLength(currentLength);
+                ufo.style.left = `${point.x}px`;
+                ufo.style.top = `${point.y}px`;
+
+                if (progress < 1) {
+                    animationFrameId = window.requestAnimationFrame(step);
+                } else {
+                    multiplierText.textContent = `${end.toFixed(2)}x`;
+                    multiplierText.style.color = '#00ff8c';
+                    ad.style.animation = 'jackpotFlash 0.5s ease-out';
+                }
+            };
+            animationFrameId = window.requestAnimationFrame(step);
+        }
+
+        function masterTimeline() {
+            // --- RESET ---
+            ad.style.animation = 'none';
+            endscreen.style.opacity = 0;
+            cashoutButton.classList.remove('visible');
+            window.cancelAnimationFrame(animationFrameId);
+            multiplierText.style.color = '#fff';
+            
+            // FIXED: Hide path and UFO at the very start
+            flightPathSvg.style.visibility = 'hidden';
+            flightPath.style.strokeDashoffset = pathLength;
+            const startPoint = flightPath.getPointAtLength(0);
+            ufo.style.left = `${startPoint.x}px`;
+            ufo.style.top = `${startPoint.y}px`;
+            ufo.style.opacity = 0;
+            
+            // --- LAUNCH (1s) ---
+            setTimeout(() => {
+                // FIXED: Make path and UFO visible at the exact same time animation starts
+                flightPathSvg.style.visibility = 'visible';
+                multiplierText.style.opacity = 1;
+                ufo.style.opacity = 1;
+                runFlightAnimation(1, 9999.99, flightDuration);
+            }, 1000);
+
+            // --- FLIGHT EVENTS ---
+            setTimeout(() => {
+                cashoutButton.classList.add('visible');
+            }, 2000);
+            
+            setTimeout(() => {
+                cashoutButton.classList.remove('visible');
+            }, 9000);
+
+            // --- END SCREEN (9.5s) ---
+            setTimeout(() => {
+                endscreen.style.opacity = 1;
+            }, 9500);
+        }
+
+        masterTimeline();
+        setInterval(masterTimeline, adDuration);
+    </script>
+</body>
+</html>
